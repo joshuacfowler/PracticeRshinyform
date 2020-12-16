@@ -12,9 +12,6 @@ library(tidyverse)
 
 
 mockendodata <- read.csv(file = "/Users/joshuacfowler/Documents/R_projects/PracticeRshinyform/practice/mockendodata.csv")
-mpgData <- mtcars
-mpgData$am <- factor(mpgData$am, labels = c("Automatic", "Manual"))
-
 
 # Define UI for miles per gallon app ----
 ui <- pageWithSidebar(
@@ -28,8 +25,9 @@ ui <- pageWithSidebar(
         selectInput("variable", "Variable:", 
                     c("Size" = "size_t",
                       "Flowers" = "flw_t")),
-        selectizeInput("ID", "Plant_ID:", choices = c("choose" = "", levels(as.factor(mockendodata$ID)))
-                    ),
+        selectInput("Plot", "Plot #:", choices = unique(mockendodata$plot)),
+        selectInput("ID", "Plant_ID:",  choices = unique(mockendodata$ID)),
+        
         numericInput("size_t1", "Size", NA, min = 1, max = 100),
         verbatimTextOutput("value")
     ),
@@ -52,8 +50,10 @@ ui <- pageWithSidebar(
 )
 
 # Define server logic to plot various variables against mpg ----
-server <- function(input, output) {
-    
+server <- function(input, output, session) {
+  observe({
+    updateSelectInput(session, "ID", choices = as.character(mockendodata[mockendodata$plot==input$Plot, "ID"]))
+  })
     # Compute the formula text ----
     # This is in a reactive expression since it is shared by the
     # output$caption and output$mpgPlot functions
@@ -65,14 +65,15 @@ server <- function(input, output) {
     # Return the formula text for printing as a caption ----
     output$caption <- renderText({
         formulaText()
-        
     })
+    
     
   
     
  
     # Generate a plot of the requested variable against mpg ----
     # and only exclude outliers if requested
+  
     output$endoPlot <- renderPlot({
         boxplot(as.formula(formulaText()),
                 data = mockendodata,
