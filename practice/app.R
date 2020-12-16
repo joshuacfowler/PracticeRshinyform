@@ -53,6 +53,7 @@ ui <- pageWithSidebar(
 server <- function(input, output, session) {
   observe({
     updateSelectInput(session, "ID", choices = as.character(mockendodata[mockendodata$plot==input$Plot, "ID"]))
+  
   })
     # Compute the formula text ----
     # This is in a reactive expression since it is shared by the
@@ -88,7 +89,7 @@ server <- function(input, output, session) {
     output$value <- renderText({ input$obs })
     output$mapPlot <- renderPlot({
         plot(y_coord ~ x_coord,
-                data = mockendodata,
+                data = subset(mockendodata, plot == input$Plot),
                 col = ifelse(ID == input$ID,"#FF0000","#75AADB" ), pch = 19)
     })
 }
