@@ -10,11 +10,16 @@
 library(shiny)
 library(tidyverse)
 
+source("helper.R")
+mockendodata <- read.csv(file = "~/Documents/R_Projects/PracticeRshinyform/practice/mockendodata.csv")
 
-mockendodata <- read.csv(file = "/Users/joshuacfowler/Documents/R_projects/PracticeRshinyform/practice/mockendodata.csv")
 
-# Define UI for miles per gallon app ----
-ui <- pageWithSidebar(
+# Define the fields we want to save from the form
+fields <- c("Plot", "ID", "size_t1")
+
+
+# Define UI for plant demography data collection app ----
+ui <- fluidPage(
     
     # App title ----
     headerPanel("LTREB Plants"),
@@ -25,11 +30,15 @@ ui <- pageWithSidebar(
         selectInput("variable", "Variable:", 
                     c("Size" = "size_t",
                       "Flowers" = "flw_t")),
+        # Select plot number
         selectInput("Plot", "Plot #:", choices = unique(mockendodata$plot)),
+        # Select plant ID
         selectInput("ID", "Plant_ID:",  choices = unique(mockendodata$ID)),
-        
+        # Input plant size measurment as numeric
         numericInput("size_t1", "Size", NA, min = 1, max = 100),
-        verbatimTextOutput("value")
+        # Submit the form
+        actionButton("submit", "Submit")
+        
     ),
     
     # Main panel for displaying outputs ----
@@ -40,13 +49,15 @@ ui <- pageWithSidebar(
         # Output: Plot of the requested variable against mpg ----
         plotOutput("endoPlot"),
         
-        # Output: size and flowering of selected id
+        # Output: previous year size and flowering of selected id
+        h3(textOutput("caption2")),
         tableOutput("table"),
         
         # Output: Map of the location within the plot ----
-        plotOutput("mapPlot"),
+        plotOutput("mapPlot")
         
     )
+    
 )
 
 # Define server logic to plot various variables against mpg ----
@@ -68,10 +79,6 @@ server <- function(input, output, session) {
         formulaText()
     })
     
-    
-  
-    
- 
     # Generate a plot of the requested variable against mpg ----
     # and only exclude outliers if requested
   
@@ -81,17 +88,32 @@ server <- function(input, output, session) {
                 col = "#75AADB", pch = 19)
     })
     
-    
+    #table of the previous years data for the given ID
+    output$caption2 <- renderText({
+      "Previous data"
+    })
     output$table <- renderTable({ 
         mockendodata %>% 
             filter(ID == input$ID)
     })
-    output$value <- renderText({ input$obs })
+  
     output$mapPlot <- renderPlot({
         plot(y_coord ~ x_coord,
                 data = subset(mockendodata, plot == input$Plot),
                 col = ifelse(ID == input$ID,"#FF0000","#75AADB" ), pch = 19)
     })
+    
+    # Whenever a field is filled, aggregate all form data
+    formData <- reactive({
+      data <- sapply(fields, function(x) input[[x]])
+      data
+    })
+    # When the Submit button is clicked, save the form data   
+    observeEvent(input$submit, {
+      saveData(formData())
+    })
+    
+
 }
 
 shinyApp(ui, server)
