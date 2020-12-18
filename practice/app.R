@@ -54,8 +54,12 @@ ui <- fluidPage(
         tableOutput("table"),
         
         # Output: Map of the location within the plot ----
-        plotOutput("mapPlot")
+        plotOutput("mapPlot"),
         
+        
+        # Output: Table of all previous responses
+        h3(textOutput("caption3")),
+        tableOutput("responses")
     )
     
 )
@@ -90,7 +94,11 @@ server <- function(input, output, session) {
     
     #table of the previous years data for the given ID
     output$caption2 <- renderText({
-      "Previous data"
+      paste("year_t measurements from plant #", input$ID)
+    })
+    
+    output$caption3 <- renderText({
+      "ID's recorded"
     })
     output$table <- renderTable({ 
         mockendodata %>% 
@@ -113,7 +121,13 @@ server <- function(input, output, session) {
       saveData(formData())
     })
     
-
+    # Show the previous responses
+    # (update with current response when Submit is clicked)
+    output$responses <- renderTable({
+      input$submit
+      loadData()
+    })  
+    
 }
 
 shinyApp(ui, server)
